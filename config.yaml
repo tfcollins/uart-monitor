@@ -1,2 +1,3 @@
 uarts:
-- "/dev/serial/by-id/usb-Silicon_Labs_CP2103_USB_to_UART_Bridge_Controller_0001-if00-port0"
+- "/dev/serial/by-id/usb-Analog_Devices_Inc._PlutoSDR__ADALM-PLUTO__10440004278a0007f9ff0d00ce8fedd622-if03"
+- "/dev/serial/by-id/usb-Analog_Devices_Inc._PlutoSDR__ADALM-PLUTO__104473dc5993001702003b009b1c2a4e42-if03"
