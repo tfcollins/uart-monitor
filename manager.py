@@ -30,7 +30,7 @@ class manager:
         self.logfiles = []
         for i, address in enumerate(self.addresses):
             name = "uart_d_"+str(i)
-            screen_cmd = "'screen -S {} -L -Logfile {}.log {} 115200' Enter".format(name, name, address)
+            screen_cmd = "'screen -S {} -L -Logfile {}.log {} 115200,-ixon,-ixoff,onlcr' Enter".format(name, name, address)
             self.logfiles.append(name+".log")
             cmd = "tmux send-keys -t {} ".format(i)
             cmd = cmd + screen_cmd
