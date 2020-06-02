@@ -5,6 +5,8 @@ import os
 from curses import wrapper
 import curses.textpad
 import curses
+import click
+
 
 def read_yaml(filename):
     """Process yaml into config"""
@@ -29,32 +31,33 @@ class manager:
     def start_screens(self):
         self.logfiles = []
         for i, address in enumerate(self.addresses):
-            name = "uart_d_"+str(i)
-            screen_cmd = "'screen -S {} -L -Logfile {}.log {} 115200,-ixon,-ixoff,onlcr' Enter".format(name, name, address)
-            self.logfiles.append(name+".log")
+            name = "uart_d_" + str(i)
+            screen_cmd = "'screen -S {} -L -Logfile {}.log {} 115200,-ixon,-ixoff,onlcr' Enter".format(
+                name, name, address
+            )
+            self.logfiles.append(name + ".log")
             cmd = "tmux send-keys -t {} ".format(i)
             cmd = cmd + screen_cmd
-            print("Starting session for:",address)
+            print("Starting session for:", address)
             time.sleep(1)
             p = subprocess.Popen(cmd, shell=True, executable="/bin/bash")
             # Pew pew
             (output, err) = p.communicate()
         time.sleep(1)
 
-    def send_to_screens(self,cmd, reversed=False):
+    def send_to_screens(self, cmd, reversed=False):
 
         r = range(len(self.addresses))
         if reversed:
             r = reversed(r)
 
         for i in r:
-            cmd_to_session = "tmux send-keys -t {} '{}' Enter".format(i,cmd)
+            cmd_to_session = "tmux send-keys -t {} '{}' Enter".format(i, cmd)
             p = subprocess.Popen(cmd_to_session, shell=True, executable="/bin/bash")
             (output, err) = p.communicate()
 
-
-    def send_to_screen(self,cmd,index):
-        cmd_to_session = "tmux send-keys -t {} '{}' Enter".format(index,cmd)
+    def send_to_screen(self, cmd, index):
+        cmd_to_session = "tmux send-keys -t {} '{}' Enter".format(index, cmd)
         p = subprocess.Popen(cmd_to_session, shell=True, executable="/bin/bash")
         (output, err) = p.communicate()
 
@@ -69,17 +72,13 @@ class manager:
     #         p = subprocess.Popen(cmd, shell=True, executable="/bin/bash")
     #         (output, err) = p.communicate()
 
-
-
-
     def kill_screen_sessions(self):
         for i in range(len(self.addresses)):
-            name = "uart_d_"+str(i)
+            name = "uart_d_" + str(i)
             cmd = "screen -S {} -X quit".format(name)
             p = subprocess.Popen(cmd, shell=True, executable="/bin/bash")
             (output, err) = p.communicate()
             del p
-
 
     def start_user_pane(self):
         # self.stdscr = curses.initscr()
@@ -87,30 +86,21 @@ class manager:
         # self.user_in()
         pass
 
-    def print_user_message(self, win):
+    def print_user_message(self):
         message = [
             "//// Commands ////",
             "--Quit: q",
             "--Send uart command to all: s <command>",
             "--Send uart command to single board: b <index> <command>",
-            "  index starts at 0"
+            "  index starts at 0",
+            "",
+            "---------------",
         ]
         for l in range(len(message)):
-            win.addstr(l + 1, 1, message[l])
-        win.refresh()
-        return len(message)+4
+            click.echo(click.style(message[l], fg="green"))
+        return len(message) + 4
 
-    def process_user_input(self, data,l):
-        data = data.split("\n")
-        v = 0
-        for line in data:
-            v += 1
-            if "User input" in line:
-                break
-        data = "\n".join(data[v-1:])
-        data = data.replace("User input: ", "")
-        data = data.replace("\n", "")
-        data = data.strip()
+    def process_user_input(self, data):
         e = 0
         arguments = []
         if len(data) > 1:
@@ -123,56 +113,41 @@ class manager:
         arguments = arguments[1:]
         return data, e, arguments
 
-    def user_in(self,stdscr):
-        # self.label_each_pane()
-
-        self.stdscr = stdscr
-        uwin = self.stdscr
-        tb = curses.textpad.Textbox(uwin)
+    def user_in(self):
+        click.clear()
+        time.sleep(1)
 
         while 1:
-            uwin.clear()
-            l = self.print_user_message(self.stdscr)
-            uwin.addstr(l, 1, "User input: ")
-            text = tb.edit(enter_is_terminate)
-            file = open("gather.txt", "w")
-            file.write(str(text))
-            file.close()
+            click.clear()
+            self.print_user_message()
+            c = click.prompt("\nUser input")
+            out = c
+            arguments = []
             # Process input
-            (out, e, arguments) = self.process_user_input(text,l)
-            uwin.addstr(l+3, 0, "Got: |" + out + "|" + "".join(arguments))
+            (out, e, arguments) = self.process_user_input(out)
+            click.echo("Got: Command: |" + out + "| With Args: " + "".join(arguments))
+            time.sleep(1)
             if e > 0:
-                uwin.addstr(
-                    l+4, 0, "Unknown command. Command must be letter<space>arguments"
-                )
-                uwin.refresh()
+                click.echo("Unknown command. Command must be letter<space>arguments")
                 time.sleep(2)
                 continue
 
-            uwin.refresh()
             if out == "q":
-                uwin.clear()
-                uwin.refresh()
-                uwin.addstr(0, 0, "Quitting")
-                uwin.refresh()
-                uwin.addstr(1, 0, "killing screens")
-                uwin.refresh()
-                time.sleep(1)
+                click.echo("Quitting")
+                click.echo("killing screens")
+                time.sleep(2)
                 self.kill_screen_sessions()
-                time.sleep(1)
-                uwin.addstr(2, 0, "Sending exits")
-                uwin.refresh()
-                time.sleep(1)
+                click.echo("Sending exits")
+                time.sleep(2)
                 r = range(len(self.addresses))
                 r = reversed(r)
                 for i in r:
-                    self.send_to_screen("exit",i)
+                    self.send_to_screen("exit", i)
                 return
             elif out == "s":
                 if isinstance(arguments, list):
                     arguments = " ".join(arguments)
-                uwin.addstr(l+4, 0, "Sending command to all with args: " + arguments)
-                uwin.refresh()
+                click.echo("Sending command to all with args: " + arguments)
                 time.sleep(1)
                 self.send_to_screens(arguments)
                 pass
@@ -182,18 +157,20 @@ class manager:
                 index = int(arguments.split(" ")[0])
                 arguments = " ".join(arguments.split(" ")[1:])
 
-                if index>=(len(self.addresses)):
-                    uwin.addstr(l+4, 0, "Not a valid screen index "+str(index))
-                    uwin.refresh()
+                if index >= (len(self.addresses)):
+                    click.echo("Not a valid screen index " + str(index))
                     time.sleep(2)
                 else:
-                    uwin.addstr(l+4, 0, "Sending command to board "+str(index)+" with args: " + arguments)
-                    uwin.refresh()
+                    click.echo(
+                        "Sending command to board "
+                        + str(index)
+                        + " with args: "
+                        + arguments,
+                    )
                     time.sleep(2)
-                    self.send_to_screen(arguments,index)
+                    self.send_to_screen(arguments, index)
             else:
-                uwin.addstr(l+4, 0, "Unknown command")
-                uwin.refresh()
+                click.echo("Unknown command")
                 time.sleep(2)
 
 
@@ -203,11 +180,12 @@ def enter_is_terminate(x):
     else:
         return x
 
-def app(stdscr):
+
+def app():
     m = manager()
-    m.user_in(stdscr)
+    m.user_in()
     del m
 
 
 if __name__ == "__main__":
-    wrapper(app)
+    app()
