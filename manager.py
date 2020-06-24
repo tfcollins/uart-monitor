@@ -32,7 +32,7 @@ class manager:
         self.logfiles = []
         for i, address in enumerate(self.addresses):
             name = "uart_d_" + str(i)
-            screen_cmd = "'screen -S {} -L -Logfile {}.log {} 115200,-ixon,-ixoff,onlcr' Enter".format(
+            screen_cmd = "'screen -S {} -L -Logfile {}.log {} 115200,-ixon,-ixoff,onlcr,inlcr' Enter".format(
                 name, name, address
             )
             self.logfiles.append(name + ".log")
