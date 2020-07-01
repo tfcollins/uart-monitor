@@ -32,7 +32,8 @@ class manager:
         self.logfiles = []
         for i, address in enumerate(self.addresses):
             name = "uart_d_" + str(i)
-            screen_cmd = "'screen -S {} -L -Logfile {}.log {} 115200,-ixon,-ixoff,onlcr,inlcr' Enter".format(
+            #screen_cmd = "'screen -S {} -L -Logfile {}.log {} 115200,-ixon,-ixoff,onlcr,inlcr' Enter".format(
+            screen_cmd = "'screen -S {} -L -Logfile {}.log {} 115200,-ixon,-ixoff,echo' Enter".format(
                 name, name, address
             )
             self.logfiles.append(name + ".log")
@@ -52,12 +53,18 @@ class manager:
             r = reversed(r)
 
         for i in r:
-            cmd_to_session = "tmux send-keys -t {} '{}' Enter".format(i, cmd)
+            if cmd == 'f':
+                cmd_to_session = "tmux send-keys -t {} '{}'".format(i, cmd)
+            else:
+                cmd_to_session = "tmux send-keys -t {} '{}' Enter".format(i, cmd)
             p = subprocess.Popen(cmd_to_session, shell=True, executable="/bin/bash")
             (output, err) = p.communicate()
 
     def send_to_screen(self, cmd, index):
-        cmd_to_session = "tmux send-keys -t {} '{}' Enter".format(index, cmd)
+        if cmd == 'f':
+            cmd_to_session = "tmux send-keys -t {} '{}'".format(index, cmd)
+        else:
+            cmd_to_session = "tmux send-keys -t {} '{}' Enter".format(index, cmd)
         p = subprocess.Popen(cmd_to_session, shell=True, executable="/bin/bash")
         (output, err) = p.communicate()
 
